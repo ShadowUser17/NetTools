@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import sys
-import argparse
+from argparse import ArgumentParser
+from traceback import print_exc
 #
 from base64 import b64encode
 from json import loads as json
 from urllib import parse as Parser
 from urllib import request as Request
-from traceback import print_exc
+from ipaddress import ip_address
 #
 #
 def mkuagent():
@@ -21,6 +22,14 @@ def mkbauth(auth):
     return ('Authorization', auth)
 #
 #
+def ip_validate(ip):
+    try:
+        ip = ip_address(ip)
+        if ip.is_global: return True
+    #
+    except ValueError: pass
+#
+#
 def ip_read_list(fname):
     ips = set()
     #
@@ -30,7 +39,7 @@ def ip_read_list(fname):
             item = item.rstrip()
             ips.add(item)
     #
-    return list(filter(None, ips))
+    return list(filter(ip_validate, ips))
 #
 #
 def ip_get_info(ip, auth=None):
@@ -54,7 +63,7 @@ def ip_print(data, fd=sys.stdout):
 #
 #
 def args_parse(args=sys.argv[1:]):
-    aparse = argparse.ArgumentParser()
+    aparse = ArgumentParser()
     aparse.add_argument('input', help='Set input file or ip.')
     aparse.add_argument('-m', dest='mode', choices=['s', 'm'], help='Set mode: s/m')
     aparse.add_argument('-t', dest='token', default='', help='Set API key: \'user:pass\'')
@@ -71,17 +80,15 @@ if __name__ == '__main__':
         if args.output:
             out = open(args.output, 'w')
         #
-        if args.mode == 's':
+        if args.mode == 's' and ip_validate(args.input):
             res = ip_get_info(args.input, args.token)
-            ip_print(res, out)
+            if res: ip_print(res, out)
         #
         elif args.mode == 'm':
             ips = ip_read_list(args.input)
             #
             ips = [ip_get_info(item, args.token) for item in ips]
             for item in ips: ip_print(item, out)
-        #
-        else: raise argparse.ArgumentError(args.mode, 'Bad value!')
     #
     except Exception: print_exc()
     else: out.close()
