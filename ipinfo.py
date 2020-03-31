@@ -17,6 +17,7 @@ def mkuagent():
 #
 #
 def mkbauth(auth):
+    auth = '{}:'.format(auth)
     auth = b64encode(auth.encode())
     auth = 'Basic {}'.format(auth.decode())
     return ('Authorization', auth)
@@ -65,8 +66,8 @@ def ip_print(data, fd=sys.stdout):
 def args_parse(args=sys.argv[1:]):
     aparse = ArgumentParser()
     aparse.add_argument('input', help='Set input file or ip.')
-    aparse.add_argument('-m', dest='mode', choices=['s', 'm'], help='Set mode: s/m')
-    aparse.add_argument('-t', dest='token', default='', help='Set API key: \'user:pass\'')
+    aparse.add_argument('-m', dest='mode', default='s', choices=['s', 'm'], help='Set mode: s/m')
+    aparse.add_argument('-t', dest='token', default='', help='Set API key.')
     aparse.add_argument('-w', dest='output', default='', help='Set output file.')
     return aparse.parse_args(args)
 #
