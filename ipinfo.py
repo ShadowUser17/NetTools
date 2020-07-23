@@ -3,6 +3,7 @@ import sys
 from argparse import ArgumentParser
 from traceback import print_exc
 #
+from os import environ
 from base64 import b64encode
 from json import loads as json
 from urllib import parse as Parser
@@ -65,9 +66,11 @@ def ip_print(data, fd=sys.stdout):
 #
 def args_parse(args=sys.argv[1:]):
     aparse = ArgumentParser()
+    api_key = environ.get('KEY_IPINFO', '')
+    #
     aparse.add_argument('input', help='Set input file or ip.')
     aparse.add_argument('-m', dest='mode', default='s', choices=['s', 'm'], help='Set mode: s/m')
-    aparse.add_argument('-t', dest='token', default='', help='Set API key.')
+    aparse.add_argument('-t', dest='token', default=api_key, help='Set API key or set environment KEY_IPINFO.')
     aparse.add_argument('-w', dest='output', default='', help='Set output file.')
     return aparse.parse_args(args)
 #
