@@ -46,7 +46,16 @@ def _tcpscan(target):
     return (target[1], status)
 #
 #
-def scan_ports(hosts, ports): pass
+def scan_ports(hosts, ports):
+    pool = mp.Pool(mp.cpu_count())
+    items = []
+    #
+    for host in hosts:
+        target = itertools.repeat(host, len(ports))
+        res = pool.map(_tcpscan, zip(target, ports))
+        items.append((host, res))
+    #
+    return items
 #
 #
 def read_input_list(fname):
@@ -79,7 +88,7 @@ def get_port_range(ports):
 def get_args(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('target', help='Set IPv4/6 or file.')
-    parser.add_argument('-p', dest='port', help='Set dest. ports: 21-22,80,443')
+    parser.add_argument('-p', dest='port', default='1-1023', help='Set dest. ports: 21-22,80,443')
     parser.add_argument('-o', dest='output', help='Set output file.')
     #
     return parser.parse_args(args)
@@ -88,4 +97,5 @@ def get_args(args=None):
 def main(args=None): pass
 #
 #
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    print(scan_ports(['91.200.113.203'], get_port_range('137,139,445,3389')))
