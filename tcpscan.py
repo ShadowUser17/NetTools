@@ -46,7 +46,7 @@ def _tcpscan(target):
     return (target[1], status)
 #
 #
-def scan_ports(host): pass
+def scan_ports(hosts, ports): pass
 #
 #
 def read_input_list(fname):
@@ -76,8 +76,16 @@ def get_port_range(ports):
     return ports
 #
 #
-if __name__ == '__main__':
-    targets = read_input_list('./targets.txt')
-    #targets = resolve_targets(targets)
-    #for item in targets: print(item[0], item[1])
-    #print(targets)
+def get_args(args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('target', help='Set IPv4/6 or file.')
+    parser.add_argument('-p', dest='port', help='Set dest. ports: 21-22,80,443')
+    parser.add_argument('-o', dest='output', help='Set output file.')
+    #
+    return parser.parse_args(args)
+#
+#
+def main(args=None): pass
+#
+#
+if __name__ == '__main__': main()
