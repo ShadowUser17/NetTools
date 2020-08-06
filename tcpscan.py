@@ -5,6 +5,7 @@ import os
 import pathlib
 import socket
 import ipaddress
+import itertools
 import multiprocessing as mp
 #
 #
@@ -57,7 +58,22 @@ def read_input_list(fname):
     return list(filter(None, data))
 #
 #
-def get_port_range(ports): pass
+def get_port_range(ports):
+    ports = ports.split(',')
+    #
+    single = list(filter(str.isdigit, ports))
+    single = list(map(int, single))
+    #
+    ranges = list(itertools.filterfalse(str.isdigit, ports))
+    ports = single
+    #
+    for item in ranges:
+        (first, second) = list(map(int, item.split('-')))
+        item = [__ for __ in range(first, (second+1))]
+        ports.extend(item)
+    #
+    ports.sort()
+    return ports
 #
 #
 if __name__ == '__main__':
