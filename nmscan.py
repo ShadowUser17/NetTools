@@ -10,6 +10,7 @@ class BaseScan:
         self.hosts = ip.ip_network(hosts)
         self.time_format = '%Y-%m-%d'
         self._case_prefix = 'scan'
+        self._case_now = None
         self._get_cases()
 
     def __call__(self):
@@ -23,14 +24,18 @@ class BaseScan:
         cases = filter(lambda item: item.startswith(prefix), cases)
         self._case_list = list(cases)
 
+    @property
+    def cases(self):
+        return self._case_list
+
     def _get_date(self):
         date = datetime.now()
         return date.strftime(self.time_format)
 
     def _get_output_fd(self, host):
-        prefix = self._case_prefix
         date = self._get_date()
-        fname = '{}_{}-{}'.format(prefix, host, date)
+        case = self._case_now
+        fname = '{}_{}-{}.log'.format(host, date, case)
         return open(fname, 'wb')
 
     def exec_cmd(self, args, host):
@@ -41,9 +46,12 @@ class BaseScan:
 
     def _exec_cases(self, host):
         for case in self._case_list:
+            self._case_now = case
             func = getattr(self, case)
+
             try:
-                print('Start:', case)
+                print('Start:', host, case)
                 func(host)
+                print('Exit:', host, case)
             except Exception:
                 print_exc()
