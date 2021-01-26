@@ -9,9 +9,12 @@ class BaseScan:
         'hosts = ip/cidr, fout = enable output to file.'
         self.hosts = ip.ip_network(hosts)
         self.time_format = '%Y-%m-%d'
+
         self._case_prefix = 'scan'
+        self._case_rcode = None
         self._case_now = None
         self._get_cases()
+        self._sort_cases()
 
     def __call__(self):
         'Start testing...'
@@ -23,6 +26,11 @@ class BaseScan:
         cases = dir(self)
         cases = filter(lambda item: item.startswith(prefix), cases)
         self._case_list = list(cases)
+
+    def _sort_cases(self):
+        self._case_list.sort(
+            key=lambda item: item.split('_')[:-1],
+            reverse=True)
 
     @property
     def cases(self):
@@ -42,7 +50,8 @@ class BaseScan:
         with self._get_output_fd(host) as fd:
             cmd = '{} {}'.format(args, host)
             ps = sp.Popen(cmd, shell=True, stdout=fd, stderr=fd)
-            ps.communicate()
+            self._case_rcode = ps.wait()
+            return self._case_rcode
 
     def _exec_cases(self, host):
         for case in self._case_list:
@@ -50,8 +59,9 @@ class BaseScan:
             func = getattr(self, case)
 
             try:
-                print('Start:', host, case)
                 func(host)
-                print('Exit:', host, case)
+                rcode = self._case_rcode
+                print('Task: {}:{}:{}'.format(host, case, rcode))
+
             except Exception:
                 print_exc()
