@@ -4,14 +4,12 @@ from traceback import print_exc
 from urllib import parse
 import base64
 import quopri
-import json
 
 
 class Data:
     def __init__(self, data, code):
         self._data = data
         self._code = code
-
 
     def encode(self):
         if self._code == 'qp':
@@ -23,9 +21,7 @@ class Data:
             return tmp.decode()
 
         elif self._code == 'url':
-            tmp = json.loads(self._data)
-            return parse.urlencode(tmp)
-
+            return parse.quote(self._data)
 
     def decode(self):
         if self._code == 'qp':
@@ -37,8 +33,7 @@ class Data:
             return tmp.decode()
 
         elif self._code == 'url':
-            tmp = parse.parse_qsl(self._data)
-            return repr(dict(tmp))
+            return parse.unquote(self._data)
 
 
 def init_args():
