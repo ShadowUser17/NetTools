@@ -1,69 +1,90 @@
 #!/usr/bin/env python3
-from argparse import ArgumentParser
-from re import compile as mkregex
-from traceback import print_exc
-from collections import OrderedDict
-#from json import dumps as js_dump
-from pathlib import Path
+import argparse
+import traceback
+import types
+import os
+import re
+import sys
+import collections
 
 
 class NmapParser:
     def __init__(self):
-        self.regex_ip = mkregex('\s(\d+\.\d+\.\d+\.\d+)\n')
-        self.regex_port = mkregex('\n(\d+)/(\w+)\s')
+        self.regex_begin = re.compile(r'Nmap scan*')
+        self.regex_port = re.compile(r'\d+\/*')
+        self.regex_end = re.compile(r'\n')
+        self.items = collections.OrderedDict()
 
-        self._raw = None
-        self.items = OrderedDict()
+    def _parse(self, file: types.GeneratorType):
+        for line in file:
+            line = line.rstrip()
+
+            if self.regex_begin.match(line):
+                line = line.split()
+
+                ip = line[-1]
+                ports = list()
+
+                for line in file:
+                    if self.regex_port.match(line):
+                        line = line.rstrip()
+                        line = line.split()
+                        line = line[0]
+                        line = line.split('/')
+                        ports.append(line[0])
+                        continue
+
+                    if self.regex_end.match(line):
+                        break
+
+                if ports:
+                    ports = ','.join(ports)
+                    self.items[ip] = ports
+
+    def load_from_file(self, file_name: str):
+        with open(file_name) as file:
+            self._parse(file)
+
+    def load_from_stdin(self):
+        self._parse(sys.stdin)
+
+    def save_to_file(self, file_name: str):
+        template = '-p {plist} {host}\n'
+
+        with open(file_name, 'w') as file:
+            for key in self.items:
+                line = template.format(host=key, plist=self.items[key])
+                file.write(line)
+
+    def show_to_stdout(self):
+        template = '-p {plist} {host}\n'
+
+        for key in self.items:
+            print(template.format(host=key, plist=self.items[key]), end='')
 
 
-    def _parse(self):
-        self._raw = self._raw.split('\n\n')
-
-        for item in iter(self._raw):
-            ip = self.regex_ip.findall(item)
-
-            if ip:
-                ports = self.regex_port.findall(item)
-                self.items[ip[0]] = ports
-
-        self._raw = None
-
-
-    @classmethod
-    def port_to_string(self, ports):
-        tmp = map(lambda item: item[0], ports)
-        return ','.join(tmp)
-
-
-    def load_from_file(self, fname):
-        file = Path(fname)
-        self._raw = file.read_text()
-        self._parse()
-
-
-    def load_from_string(self, data):
-        self._raw = data
-        self._parse()
-
-
-def init_args(args=None):
-    parser = ArgumentParser()
-    parser.add_argument('file', help='Set Nmap output file (Normal).')
-    #parser.add_argument('-j', dest='json', action='store_true', help='Set Json output.')
+def parse_args(args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', dest='sfile', default='', help='Set Nmap output file (-oN)')
+    parser.add_argument('-d', dest='dfile', default='', help='Set output file')
     return parser.parse_args(args)
 
-
-def main(args):
-    nmap = NmapParser()
-    nmap.load_from_file(args.file)
-
-    for key in nmap.items.keys():
-        print('{}:{}'.format(key, nmap.port_to_string(nmap.items[key])))
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
-        main(init_args())
+        args = parse_args()
+        nmap = NmapParser()
+
+        if os.path.exists(args.sfile):
+            nmap.load_from_file(args.sfile)
+
+        else:
+            nmap.load_from_stdin()
+
+        if args.dfile == '':
+            nmap.show_to_stdout()
+
+        else:
+            nmap.save_to_file(args.dfile)
 
     except Exception:
-        print_exc()
+        traceback.print_exc()
