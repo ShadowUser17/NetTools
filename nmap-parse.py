@@ -23,6 +23,8 @@ class NmapParser:
                 line = line.split()
 
                 ip = line[-1]
+                ip = ip.lstrip('(')
+                ip = ip.rstrip(')')
                 ports = list()
 
                 for line in file:

@@ -17,32 +17,34 @@ func main() {
 
 	if *args.isFile {
 		var reader FileReader = FileReader{}
-		err := reader.Open(*args.input)
 
-		if err != nil {
+		if err := reader.Open(*args.input); err != nil {
 			panic(err)
 		}
+
+		defer reader.Close()
 
 		for {
 			line, err := reader.ReadLine()
 
 			if err == io.EOF {
 				break
+
+			} else if (err != nil) && (err != io.EOF) {
+				panic(err)
 			}
 
 			resolver.SetValue(line)
-			err = resolver.Resolve()
 
-			if err != nil {
+			if err = resolver.Resolve(); err != nil {
 				continue
 			}
 
 			resolver.PrintResults()
 		}
 
-		reader.Close()
-
 	} else {
+
 		resolver.SetValue(*args.input)
 		err := resolver.Resolve()
 
@@ -79,7 +81,10 @@ func (self *ArgList) ParseArgs() {
 
 func (self *ArgList) ShowArgs() string {
 	return fmt.Sprintf(
-		"{%s} {%s} {%t}", *self.input, *self.output, *self.isFile,
+		"{%s} {%s} {%t}",
+		*self.input,
+		*self.output,
+		*self.isFile,
 	)
 }
 
